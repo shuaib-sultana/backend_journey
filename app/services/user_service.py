@@ -1,0 +1,88 @@
+from app.utils.response import success
+from app.core.errors import (
+  NotFoundError,
+  ValidationError,
+  DatabaseError
+)
+from app.utils.validators import (
+  check_syntax,
+  check_email,
+  check_empty,
+  check_type,
+  check_password)
+from app.models.user_model import(
+  get_user_by_email,
+  get_user_by_id,
+  get_users,
+  add_uesr,
+  update_user_info,
+  delete_user)
+
+def home_page_logic():
+  return success("This is the home route of user API",{
+    "All routes":{
+    "/users && GET method":"To retrive all the users in our system.",
+    "/note/integer<id> && GET method":"To retrive the user by its id .",
+    "/note/string<email> && GET method":"To retrive the user by its email.",
+    "/note && POST method":"To add one user to the system . ",
+    "/note/integer<id> && PUT method":"To update one user by id.",
+    "/note/interger<id> && DELETE method":"To delete one user by id."
+  }},200 )
+
+def get_users_logic():
+  users=get_users()
+  if len(users)==0:
+    return success("The system is empty no user inrolled yet .",users,200)
+  return success("Retrieve all user in the system .",users,200)
+
+def get_user_id_logic(id):
+  user= get_user_by_id(id)
+  return success(f"User with ID {id} retrieved successfully",user,200)
+
+def get_user_email_logic(email):
+  check_empty(email)
+  check_type(email)
+  check_email(email)
+  result=get_user_by_email(email)
+  if not result:
+    raise NotFoundError("The email is not found .",[])
+  return success(f"User with email '{email}' retrieved successfully",result)
+
+def add_user_logic(user_data):
+  check_syntax(user_data)
+  name=user_data['user_name']
+  email=user_data['user_email']
+  passw=user_data['password']
+  check_empty(name,email,passw)
+  check_type(name,email,passw)
+  check_password(passw)
+  check_email(email)
+  check_user=get_user_by_email(email)
+  if check_user:
+    raise ValidationError("The email is already exists",payload=check_user)
+  user_id=add_uesr(user_data)
+  new_user=get_user_by_id(user_id)
+  return success(f"The user crated successfully ",new_user,201)
+
+def update_user_logic(id,user_data):
+  check_user=get_user_by_id(id)
+  if not check_user:
+    raise NotFoundError("The id is not found soory .",[])
+  check_syntax(user_data)
+  name=user_data['user_name']
+  email=user_data['user_email']
+  passw=user_data['password']
+  check_empty(name,email,passw)
+  check_type(name,email,passw)
+  check_password(passw)
+  check_email(email)
+  update_user_info(id,user_data)
+  upadated_user=get_user_by_id(id)
+  return success(f"The user with id {id} is uapdated successfully.",upadated_user,201)
+
+def delete_user_logic(id):
+  check_user=get_user_by_id(id)
+  if not check_user:
+    raise NotFoundError(f"The user with id {id} not found.")
+  delete_user(id)
+  return success(f"The user wiht id {id} deleted successfully.",check_user,200)
